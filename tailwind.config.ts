@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        vr: {
+          primary: "hsl(var(--vr-primary))",
+          secondary: "hsl(var(--vr-secondary))",
+          background: "hsl(var(--vr-background))",
+          surface: "hsl(var(--vr-surface))",
+          "surface-elevated": "hsl(var(--vr-surface-elevated))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +64,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-secondary": "var(--gradient-secondary)",
+        "gradient-background": "var(--gradient-background)",
+      },
+      boxShadow: {
+        vr: "var(--shadow-vr)",
+        card: "var(--shadow-card)",
       },
       borderRadius: {
         lg: "var(--radius)",
