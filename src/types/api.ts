@@ -72,6 +72,7 @@ export interface Event {
   description: string;
   createdAt: string;
   updatedAt: string;
+  devices: string[];
 }
 
 export interface EventRequest {
