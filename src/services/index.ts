@@ -1,4 +1,3 @@
-export { authService } from './authService';
-export { categoryService } from './categoryService';
-export { mediaService } from './mediaService';
-export { tourService } from './tourService';
+export { authService } from "./authService";
+export { mediaService } from "./mediaService";
+export { eventService } from "./eventService";

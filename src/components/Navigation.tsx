@@ -1,14 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Home, 
-  Video, 
-  Calendar, 
-  Settings, 
+import {
+  Home,
+  Video,
+  Calendar,
+  Settings,
   Radio,
   Users,
   Menu,
-  X
+  X,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,11 +22,11 @@ const Navigation = () => {
     { path: "/events", icon: Calendar, label: "Sự kiện" },
     { path: "/streaming", icon: Radio, label: "Streaming" },
     { path: "/about", icon: Users, label: "Về chúng tôi" },
-    { path: "/settings", icon: Settings, label: "Cài đặt" },
+    { path: "/help", icon: Settings, label: "Hướng dẫn" },
   ];
 
   return (
-    <nav className="bg-vr-surface border-b border-border">
+    <nav className="bg-vr-surface border-b border-border h-fit">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -45,12 +45,12 @@ const Navigation = () => {
               const isActive = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path}>
-                  <Button 
+                  <Button
                     variant={isActive ? "default" : "ghost"}
                     className={`flex items-center space-x-2 ${
-                      isActive 
-                        ? "bg-gradient-primary text-primary-foreground shadow-vr" 
-                        : "hover:bg-vr-surface-elevated"
+                      isActive
+                        ? "bg-gradient-primary text-primary-foreground shadow-vr"
+                        : "hover:bg-vr-surface-elevated hover:text-white"
                     }`}
                   >
                     <Icon size={18} />
@@ -80,17 +80,17 @@ const Navigation = () => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
-                <Link 
-                  key={item.path} 
+                <Link
+                  key={item.path}
                   to={item.path}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <Button 
+                  <Button
                     variant={isActive ? "default" : "ghost"}
                     className={`w-full justify-start flex items-center space-x-2 ${
-                      isActive 
-                        ? "bg-gradient-primary text-primary-foreground shadow-vr" 
-                        : "hover:bg-vr-surface-elevated"
+                      isActive
+                        ? "bg-gradient-primary text-primary-foreground shadow-vr"
+                        : "hover:bg-vr-surface-elevated hover:text-white"
                     }`}
                   >
                     <Icon size={18} />

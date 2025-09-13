@@ -8,6 +8,7 @@ import VideoManagement from "./pages/VideoManagement";
 import EventManagement from "./pages/EventManagement";
 import EventDetails from "./pages/EventDetails";
 import StreamingControl from "./pages/StreamingControl";
+import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import About from "./pages/About";
 import Navigation from "./components/Navigation";
@@ -30,7 +31,7 @@ const App = () => (
             <Route path="/events/:eventId" element={<EventDetails />} />
             <Route path="/streaming" element={<StreamingControl />} />
             <Route path="/about" element={<About />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
