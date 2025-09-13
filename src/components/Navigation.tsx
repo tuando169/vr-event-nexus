@@ -6,6 +6,7 @@ import {
   Calendar, 
   Settings, 
   Radio,
+  Users,
   Menu,
   X
 } from "lucide-react";
@@ -20,6 +21,7 @@ const Navigation = () => {
     { path: "/videos", icon: Video, label: "Kho Video 360" },
     { path: "/events", icon: Calendar, label: "Sự kiện" },
     { path: "/streaming", icon: Radio, label: "Streaming" },
+    { path: "/about", icon: Users, label: "Về chúng tôi" },
     { path: "/settings", icon: Settings, label: "Cài đặt" },
   ];
 
