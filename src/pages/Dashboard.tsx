@@ -104,7 +104,7 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -129,7 +129,7 @@ const Dashboard = () => {
               </Card>
             );
           })}
-        </div>
+        </div> */}
 
         {/* Recent Events */}
         <Card className="bg-vr-surface border-border shadow-card">
