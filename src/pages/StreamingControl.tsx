@@ -33,6 +33,7 @@ const StreamingControl = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const currentVideo = playlist[currentIndex] || null;
 
@@ -50,7 +51,6 @@ const StreamingControl = () => {
       try {
         setLoading(true);
 
-        // Lấy sự kiện
         const eventsRes = await eventService.getEvent();
         if (eventsRes.data) {
           setEvents(eventsRes.data);
@@ -64,7 +64,6 @@ const StreamingControl = () => {
           setEvents([]);
         }
 
-        // Lấy thiết bị
         const deviceRes = await deviceService.getDevices();
         setDevices(deviceRes.data);
       } catch (error) {
@@ -75,7 +74,34 @@ const StreamingControl = () => {
     };
     fetchData();
   }, []);
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
 
+    const handleLoadedMetadata = () => {
+      setDuration(videoEl.duration);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(videoEl.currentTime);
+    };
+
+    const handleEnded = () => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= playlist.length) nextIndex = 0;
+      handlePlayVideo(nextIndex);
+    };
+
+    videoEl.addEventListener("loadedmetadata", handleLoadedMetadata);
+    videoEl.addEventListener("timeupdate", handleTimeUpdate);
+    videoEl.addEventListener("ended", handleEnded);
+
+    return () => {
+      videoEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      videoEl.removeEventListener("timeupdate", handleTimeUpdate);
+      videoEl.removeEventListener("ended", handleEnded);
+    };
+  }, [currentIndex, playlist]);
   // Hàm load playlist dựa vào danh sách id trong event
   const loadPlaylist = async (videoIds: string[]) => {
     try {
@@ -103,7 +129,9 @@ const StreamingControl = () => {
     const videoEl = videoRef.current;
     if (videoEl) {
       videoEl.currentTime = 0;
-      await videoEl.play();
+      videoEl
+        .play()
+        .catch((err) => console.warn("Play blocked by browser:", err));
     }
 
     if (selectedEvent) {
@@ -137,6 +165,7 @@ const StreamingControl = () => {
 
     const handleTimeUpdate = () => {
       if (videoEl.duration > 0) {
+        setCurrentTime(videoEl.currentTime);
         setProgress((videoEl.currentTime / videoEl.duration) * 100);
       }
     };
@@ -156,7 +185,7 @@ const StreamingControl = () => {
       videoEl.removeEventListener("timeupdate", handleTimeUpdate);
       videoEl.removeEventListener("ended", handleEnded);
     };
-  }, [currentVideo]);
+  }, [currentIndex, playlist]);
 
   // Đồng bộ volume với video
   useEffect(() => {
@@ -245,12 +274,13 @@ const StreamingControl = () => {
                           <div className="w-full bg-vr-surface-elevated rounded-full h-2 mt-2">
                             <div
                               className="bg-gradient-primary h-2 rounded-full transition-all duration-200"
-                              style={{ width: `${progress}%` }}
+                              style={{
+                                width: `${(currentTime / duration) * 100}%`,
+                              }}
                             />
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            {formatTime((progress / 100) * duration)} /{" "}
-                            {formatTime(duration)}
+                            {formatTime(currentTime)} / {formatTime(duration)}
                           </div>
                         </div>
                       </div>
