@@ -42,8 +42,8 @@ const StreamingControl = () => {
 
         // Lấy sự kiện
         const eventsRes = await eventService.getEvent();
-        const events = eventsRes.data;
-        setEvents(events);
+        if (eventsRes.data) setEvents(eventsRes.data);
+        else setEvents([]);
 
         if (events.length > 0) {
           const firstEvent = events[0];

@@ -44,10 +44,11 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const res = await eventService.getEvent();
-        setEvents(res.data);
+        if (res.data) setEvents(res.data);
+        else setEvents([]);
       } catch (error) {
-        console.error("Lỗi khi load sự kiện:", error);
         setEvents([]);
+        console.error("Lỗi khi load sự kiện:", error);
       } finally {
         setLoading(false);
       }
