@@ -28,7 +28,7 @@ const EventManagement = () => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const res = await eventService.getEvent(1, 20); // lấy 20 sự kiện 1 trang
+        const res = await eventService.getEvent(); // lấy 20 sự kiện 1 trang
         setEvents(res.data);
       } catch (error) {
         console.error("Lỗi khi tải sự kiện:", error);

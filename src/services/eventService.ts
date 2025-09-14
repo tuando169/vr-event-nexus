@@ -8,9 +8,9 @@ import {
 
 export const eventService = {
   // Get all events
-  async getEvent(page = 1, size = 10): Promise<PaginatedResponse<Event>> {
+  async getEvent(): Promise<PaginatedResponse<Event>> {
     const response = await apiClient.get<PaginatedResponse<Event>>(
-      `/api/v1/event?page=${page}&size=${size}`
+      `/api/v1/event?page=1&size=1000`
     );
     return response.data;
   },

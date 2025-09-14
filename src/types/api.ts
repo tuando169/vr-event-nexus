@@ -72,10 +72,24 @@ export interface Event {
   description: string;
   createdAt: string;
   updatedAt: string;
-  devices: string[];
 }
 
 export interface EventRequest {
   title: string;
   description?: string;
+  username: string;
+  password: string;
+  intro?: string;
+  logo?: string;
+  video_list?: string[];
+}
+
+export interface Device {
+  _id: string;
+  name: string;
+  is_active: boolean;
+  streaming_event: string;
+  activity: string;
+  createdAt: string;
+  updatedAt: string;
 }

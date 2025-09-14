@@ -42,7 +42,7 @@ const VideoManagement = () => {
     const fetchVideos = async () => {
       try {
         setLoading(true);
-        const res = await mediaService.getMediaFiles(1); // page=1
+        const res = await mediaService.getMediaFiles();
         setVideos(res.data);
       } catch (error) {
         console.error("Lỗi khi tải video:", error);
@@ -68,9 +68,12 @@ const VideoManagement = () => {
     }
   };
 
-  const filteredVideos = videos.filter((video) =>
-    video.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVideos = videos.filter((video) => {
+    return (
+      video.path.includes("vr360") &&
+      video.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   // Hàm upload
   const handleUpload = async () => {
@@ -164,7 +167,11 @@ const VideoManagement = () => {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="text-4xl mb-2">🎬</div>
+                    <img
+                      src={getMediaFile(video.thumbnail)}
+                      alt=""
+                      className="object-cover h-10 w-10 rounded-md"
+                    />
                     <Badge
                       variant="default"
                       className="bg-vr-secondary text-vr-background"

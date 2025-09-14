@@ -17,67 +17,43 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { eventService } from "@/services/eventService";
 import { mediaService } from "@/services/mediaService";
-import { Event, MediaFile } from "@/types/api";
-// import { streamService } from "@/services/streamService"; // bạn tạo service này để gọi API backend
+import { deviceService } from "@/services/deviceService";
+import { Event, MediaFile, Device } from "@/types/api";
+import { getMediaFile } from "@/lib/utils";
 
 const StreamingControl = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [volume, setVolume] = useState([75]);
-  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  const [activeEvents, setActiveEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [playlist, setPlaylist] = useState<MediaFile[]>([]);
-  const [currentVideo, setCurrentVideo] = useState<MediaFile | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock device list (sẽ thay bằng deviceService sau)
-  const connectedDevices = [
-    {
-      id: "HMD001",
-      name: "Oculus Quest 2 #001",
-      user: "Người dùng #1",
-      status: "connected",
-      lastActivity: "2 phút trước",
-    },
-    {
-      id: "HMD002",
-      name: "HTC Vive Pro #002",
-      user: "Người dùng #2",
-      status: "connected",
-      lastActivity: "1 phút trước",
-    },
-    {
-      id: "HMD003",
-      name: "Pico 4 #003",
-      user: "Người dùng #3",
-      status: "idle",
-      lastActivity: "5 phút trước",
-    },
-  ];
+  const currentVideo = playlist[currentIndex] || null;
 
+  // Fetch data lần đầu
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Lấy danh sách sự kiện đang active
-        const eventsRes = await eventService.getEvent(1, 10);
-        const events = eventsRes.data.filter((e) => e.streaming === "active");
-        setActiveEvents(events);
+        // Lấy sự kiện
+        const eventsRes = await eventService.getEvent();
+        const events = eventsRes.data;
+        setEvents(events);
 
-        // Chọn event đầu tiên làm default
         if (events.length > 0) {
-          setSelectedEvent(events[0]._id);
+          const firstEvent = events[0];
+          setSelectedEvent(firstEvent);
+          await loadPlaylist(firstEvent.video_list);
         }
 
-        // Lấy media files
-        const mediaRes = await mediaService.getMediaFiles(1);
-        setPlaylist(mediaRes.data);
-
-        // Gán video đầu tiên làm current
-        if (mediaRes.data.length > 0) {
-          setCurrentVideo(mediaRes.data[0]);
-        }
+        // Lấy thiết bị
+        const deviceRes = await deviceService.getDevices();
+        setDevices(deviceRes.data);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu streaming:", error);
       } finally {
@@ -87,19 +63,55 @@ const StreamingControl = () => {
     fetchData();
   }, []);
 
-  // Hàm bắt đầu stream 1 video
-  const handlePlayVideo = async (video: MediaFile) => {
-    setCurrentVideo(video);
-    setIsStreaming(true);
-
+  // Hàm load playlist dựa vào danh sách id trong event
+  const loadPlaylist = async (videoIds: string[]) => {
     try {
-      // Gọi API backend nếu có
-      // await streamService.startStream(selectedEvent, video._id);
-      console.log("Streaming video:", video.title, "cho event:", selectedEvent);
-    } catch (error) {
-      console.error("Lỗi khi start stream:", error);
+      const mediaRes = await mediaService.getMediaFiles();
+      const filtered = mediaRes.data.filter((v) => videoIds.includes(v._id));
+      setPlaylist(filtered);
+      setCurrentIndex(0);
+    } catch (err) {
+      console.error("Lỗi khi load playlist:", err);
     }
   };
+
+  // Khi chọn event khác
+  const handleSelectEvent = async (event: Event) => {
+    setSelectedEvent(event);
+    await loadPlaylist(event.video_list);
+    setIsStreaming(false);
+  };
+
+  // Hàm play video
+  const handlePlayVideo = async (index: number) => {
+    setCurrentIndex(index);
+    setIsStreaming(true);
+    if (selectedEvent) {
+      await eventService.updateEvent(selectedEvent._id, {
+        streaming: playlist[index]?._id || "",
+      });
+    }
+  };
+
+  const handlePauseVideo = async () => {
+    setIsStreaming(false);
+    if (selectedEvent) {
+      await eventService.updateEvent(selectedEvent._id, { streaming: "" });
+    }
+  };
+
+  // Auto next khi video kết thúc (giả lập thời lượng 5s)
+  useEffect(() => {
+    if (!isStreaming || !currentVideo) return;
+
+    const timer = setTimeout(() => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= playlist.length) nextIndex = 0; // quay lại đầu
+      handlePlayVideo(nextIndex);
+    }, 5000); // giả lập 5 giây phát xong video
+
+    return () => clearTimeout(timer);
+  }, [isStreaming, currentIndex, playlist]);
 
   return (
     <div className="min-h-screen bg-gradient-background">
@@ -125,7 +137,9 @@ const StreamingControl = () => {
               {isStreaming ? "Đang phát" : "Dừng"}
             </Badge>
             <Button
-              onClick={() => setIsStreaming(!isStreaming)}
+              onClick={() =>
+                isStreaming ? handlePauseVideo() : handlePlayVideo(currentIndex)
+              }
               className={
                 isStreaming
                   ? "bg-destructive hover:bg-destructive/90"
@@ -157,13 +171,17 @@ const StreamingControl = () => {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-4">
-                        <div className="text-6xl">🎬</div>
+                        <img
+                          src={getMediaFile(currentVideo.thumbnail)}
+                          alt=""
+                          className="object-cover h-10 w-10 rounded-md"
+                        />
                         <div className="flex-1">
                           <h3 className="text-lg font-medium text-foreground mb-1">
                             {currentVideo.title}
                           </h3>
                           <div className="text-sm text-muted-foreground">
-                            Đang phát cho event {selectedEvent}
+                            Đang phát cho event {selectedEvent?.title}
                           </div>
                           <div className="w-full bg-vr-surface-elevated rounded-full h-2 mt-2">
                             <div
@@ -179,7 +197,11 @@ const StreamingControl = () => {
                         <div className="flex items-center space-x-2">
                           <Button
                             size="sm"
-                            onClick={() => setIsStreaming(!isStreaming)}
+                            onClick={() =>
+                              isStreaming
+                                ? handlePauseVideo()
+                                : handlePlayVideo(currentIndex)
+                            }
                             className={
                               isStreaming
                                 ? "bg-vr-secondary text-vr-background"
@@ -219,6 +241,9 @@ const StreamingControl = () => {
                             {volume[0]}%
                           </span>
                         </div>
+                        <Button size="sm" variant="ghost">
+                          <Settings className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -238,10 +263,11 @@ const StreamingControl = () => {
                       <div
                         key={video._id}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                          currentVideo?._id === video._id
+                          currentIndex === index
                             ? "bg-gradient-primary/10 border-primary"
                             : "bg-vr-surface-elevated border-border hover:bg-vr-surface-elevated/80"
                         }`}
+                        onClick={() => setCurrentIndex(index)}
                       >
                         <div className="flex items-center space-x-3">
                           <div className="text-sm text-muted-foreground w-6">
@@ -250,7 +276,7 @@ const StreamingControl = () => {
                           <div>
                             <div
                               className={`font-medium ${
-                                currentVideo?._id === video._id
+                                currentIndex === index
                                   ? "text-primary"
                                   : "text-foreground"
                               }`}
@@ -263,7 +289,7 @@ const StreamingControl = () => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {currentVideo?._id === video._id && (
+                          {currentIndex === index && isStreaming && (
                             <Badge className="bg-vr-secondary text-vr-background">
                               Đang phát
                             </Badge>
@@ -271,7 +297,7 @@ const StreamingControl = () => {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handlePlayVideo(video)}
+                            onClick={() => handlePlayVideo(index)}
                           >
                             <Play className="h-3 w-3" />
                           </Button>
@@ -288,27 +314,25 @@ const StreamingControl = () => {
               {/* Event Selector */}
               <Card className="bg-vr-surface border-border shadow-card">
                 <CardHeader>
-                  <CardTitle className="text-foreground">
-                    Sự kiện Active
-                  </CardTitle>
+                  <CardTitle className="text-foreground">Sự kiện</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {activeEvents.map((event) => (
+                    {events.map((event) => (
                       <div
                         key={event._id}
                         className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          selectedEvent === event._id
+                          selectedEvent?._id === event._id
                             ? "bg-gradient-primary/10 border-primary"
                             : "bg-vr-surface-elevated border-border hover:border-primary/50"
                         }`}
-                        onClick={() => setSelectedEvent(event._id)}
+                        onClick={() => handleSelectEvent(event)}
                       >
                         <div className="flex items-center justify-between">
                           <div>
                             <div
                               className={`font-medium ${
-                                selectedEvent === event._id
+                                selectedEvent?._id === event._id
                                   ? "text-primary"
                                   : "text-foreground"
                               }`}
@@ -339,15 +363,15 @@ const StreamingControl = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {connectedDevices.map((device) => (
+                    {devices.map((device) => (
                       <div
-                        key={device.id}
+                        key={device._id}
                         className="flex items-center justify-between p-3 bg-vr-surface-elevated rounded-lg border border-border"
                       >
                         <div className="flex items-center space-x-3">
                           <div
                             className={`w-2 h-2 rounded-full ${
-                              device.status === "connected"
+                              device.is_active
                                 ? "bg-vr-secondary"
                                 : "bg-muted-foreground"
                             }`}
@@ -357,16 +381,16 @@ const StreamingControl = () => {
                               {device.name}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {device.user}
+                              Event: {device.streaming_event || "Không có"}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {device.lastActivity}
+                              {device.activity}
                             </div>
                           </div>
                         </div>
-                        <Button size="sm" variant="ghost">
+                        {/* <Button size="sm" variant="ghost">
                           <Eye className="h-3 w-3" />
-                        </Button>
+                        </Button> */}
                       </div>
                     ))}
                   </div>
@@ -396,11 +420,7 @@ const StreamingControl = () => {
                       <Activity className="h-8 w-8 text-vr-primary" />
                       <div>
                         <div className="text-2xl font-bold text-foreground">
-                          {
-                            connectedDevices.filter(
-                              (d) => d.status === "connected"
-                            ).length
-                          }
+                          {devices.filter((d) => d.is_active).length}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Thiết bị active

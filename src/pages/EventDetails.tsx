@@ -17,19 +17,28 @@ import {
   Users,
   Calendar,
   Key,
+  User,
 } from "lucide-react";
 import { eventService } from "@/services/eventService";
 import { mediaService } from "@/services/mediaService";
 import { Event, MediaFile } from "@/types/api";
 import { getMediaFile } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const EventDetails = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const isCreateMode = eventId === "create";
+  const [open, setOpen] = useState(false);
 
-  const [isEditing, setIsEditing] = useState(isCreateMode);
+  const [isEditing, setIsEditing] = useState(true);
   const [event, setEvent] = useState<Event | null>(
     isCreateMode
       ? {
@@ -48,6 +57,7 @@ const EventDetails = () => {
       : null
   );
   const [videos, setVideos] = useState<MediaFile[]>([]);
+  const [allVideos, setAllVideos] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,7 +72,9 @@ const EventDetails = () => {
         const res = await eventService.getEventDetail(eventId);
         setEvent(res.data);
 
-        const mediaRes = await mediaService.getMediaFiles(1);
+        const mediaRes = await mediaService.getMediaFiles();
+        setAllVideos(mediaRes.data);
+
         const filtered = mediaRes.data.filter((v) =>
           res.data.video_list.includes(v._id)
         );
@@ -83,13 +95,20 @@ const EventDetails = () => {
         const res = await eventService.createEvent({
           title: event.title,
           description: event.description,
+          username: event.username,
+          password: event.password,
+          intro: event.intro,
         });
         toast.success("Tạo sự kiện thành công!");
         navigate(`/events/${res.data._id}`);
+        setEvent(res.data);
+        setIsEditing(false);
       } else {
         const res = await eventService.updateEvent(event._id, {
           title: event.title,
           description: event.description,
+          password: event.password,
+          intro: event.intro,
         });
         toast.success("Cập nhật sự kiện thành công!");
         setEvent(res.data);
@@ -165,55 +184,64 @@ const EventDetails = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Tên sự kiện */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Tên sự kiện
-                    </Label>
-                    {isEditing ? (
-                      <Input
-                        value={event.title}
-                        onChange={(e) =>
-                          setEvent({ ...event, title: e.target.value })
-                        }
-                        className="mt-1"
-                      />
-                    ) : (
-                      <div className="mt-1 text-foreground">{event.title}</div>
-                    )}
+                    <Label>Tên sự kiện</Label>
+                    <Input
+                      value={event.title}
+                      onChange={(e) =>
+                        setEvent({ ...event, title: e.target.value })
+                      }
+                      className="mt-1"
+                      disabled={!isEditing}
+                    />
                   </div>
+
+                  {/* ID Sự kiện (chỉ edit) */}
                   {!isCreateMode && (
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        ID Sự kiện
-                      </Label>
+                      <Label>ID Sự kiện</Label>
                       <div className="mt-1 text-foreground font-mono">
                         {event._id}
                       </div>
                     </div>
                   )}
+
+                  {/* Người chủ trì */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Mật khẩu
-                    </Label>
-                    {isEditing ? (
+                    <Label>Người chủ trì</Label>
+                    {isCreateMode ? (
                       <Input
-                        value={event.password}
+                        value={event.username}
                         onChange={(e) =>
-                          setEvent({ ...event, password: e.target.value })
+                          setEvent({ ...event, username: e.target.value })
                         }
                         className="mt-1"
                       />
                     ) : (
                       <div className="mt-1 text-foreground font-mono">
-                        {event.password}
+                        {event.username || "—"}
                       </div>
                     )}
                   </div>
+
+                  {/* Mật khẩu */}
+                  <div>
+                    <Label>Mật khẩu</Label>
+                    <Input
+                      value={event.password}
+                      onChange={(e) =>
+                        setEvent({ ...event, password: e.target.value })
+                      }
+                      className="mt-1"
+                      disabled={!isEditing}
+                    />
+                  </div>
+
+                  {/* Trạng thái */}
                   {!isCreateMode && (
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        Trạng thái
-                      </Label>
+                      <Label>Trạng thái</Label>
                       <div className="mt-1">
                         <Badge className="bg-vr-secondary text-vr-background">
                           {event.streaming === "active"
@@ -225,87 +253,145 @@ const EventDetails = () => {
                   )}
                 </div>
 
+                {/* Mô tả */}
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Mô tả
-                  </Label>
-                  {isEditing ? (
-                    <textarea
-                      value={event.description}
-                      onChange={(e) =>
-                        setEvent({ ...event, description: e.target.value })
-                      }
-                      className="mt-1 w-full p-3 bg-vr-surface-elevated border border-border rounded-md text-foreground"
-                      rows={3}
-                    />
-                  ) : (
-                    <div className="mt-1 text-foreground">
-                      {event.description}
-                    </div>
-                  )}
+                  <Label>Mô tả</Label>
+                  <textarea
+                    value={event.description}
+                    onChange={(e) =>
+                      setEvent({ ...event, description: e.target.value })
+                    }
+                    className="mt-1 w-full p-3 bg-vr-surface-elevated border border-border rounded-md text-foreground"
+                    rows={3}
+                    disabled={!isEditing}
+                  />
                 </div>
               </CardContent>
             </Card>
 
             {/* Customization */}
-            {!isCreateMode && (
-              <Card className="bg-vr-surface border-border shadow-card">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <ImageIcon className="mr-2 h-5 w-5" />
-                    Tùy chỉnh Giao diện
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Logo Sự kiện
-                    </Label>
-                    <div className="mt-2 flex items-center space-x-4">
-                      <div className="w-20 h-20 bg-vr-surface-elevated border border-border rounded-lg flex items-center justify-center overflow-hidden">
-                        {event.logo ? (
-                          <img
-                            src={getMediaFile(event.logo)}
-                            alt="Logo sự kiện"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-2xl">🏢</span>
-                        )}
-                      </div>
-                      {isEditing && (
-                        <Button variant="outline" size="sm">
-                          <Upload className="mr-2 h-4 w-4" />
-                          Đổi Logo
-                        </Button>
+            <Card className="bg-vr-surface border-border shadow-card">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center">
+                  <ImageIcon className="mr-2 h-5 w-5" />
+                  Tùy chỉnh Giao diện
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Logo */}
+                <div>
+                  <Label>Logo Sự kiện</Label>
+                  <div className="mt-2 flex items-center space-x-4">
+                    <div className="w-20 h-20 bg-vr-surface-elevated border border-border rounded-lg flex items-center justify-center overflow-hidden">
+                      {event.logo ? (
+                        <img
+                          src={getMediaFile(event.logo)}
+                          alt="Logo sự kiện"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-2xl">🏢</span>
                       )}
                     </div>
+                    {isEditing && (
+                      <Button variant="outline" size="sm">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Đổi Logo
+                      </Button>
+                    )}
                   </div>
+                </div>
 
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Intro Text
-                    </Label>
-                    {isEditing ? (
-                      <textarea
-                        value={event.intro}
-                        onChange={(e) =>
-                          setEvent({ ...event, intro: e.target.value })
-                        }
-                        className="mt-1 w-full p-3 bg-vr-surface-elevated border border-border rounded-md text-foreground"
-                        rows={3}
+                {/* Intro Video */}
+                <div>
+                  <Label>Intro Video</Label>
+                  <div className="mt-2 space-y-2">
+                    {event.intro ? (
+                      <video
+                        src={getMediaFile(event.intro)}
+                        controls
+                        className="w-full rounded-lg"
                       />
                     ) : (
-                      <div className="mt-1 p-3 bg-vr-surface-elevated rounded-lg text-foreground">
-                        {event.intro}
+                      <div className="text-muted-foreground">
+                        Chưa chọn video intro
+                      </div>
+                    )}
+                    {isEditing && (
+                      <div className="flex space-x-2">
+                        <div>
+                          <input
+                            type="file"
+                            accept="video/*"
+                            id="introUpload"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const res = await mediaService.uploadFile(
+                                  file,
+                                  "vr360",
+                                  event.username || "admin"
+                                );
+                                setEvent({ ...event, intro: res.data.path });
+                                toast.success("Upload intro thành công!");
+                              } catch (err) {
+                                toast.error("Upload thất bại");
+                                console.error(err);
+                              }
+                            }}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              document.getElementById("introUpload")?.click()
+                            }
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Video
+                          </Button>
+                        </div>
+                        <Dialog open={open} onOpenChange={setOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Video className="mr-2 h-4 w-4" />
+                              Chọn từ danh sách
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Chọn Video Intro</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-2 max-h-80 overflow-y-auto">
+                              {allVideos
+                                .filter((i) => i.path.includes("vr360"))
+                                .map((v) => (
+                                  <div
+                                    key={v._id}
+                                    className="flex items-center justify-between p-2 border rounded-lg cursor-pointer hover:bg-vr-surface-elevated"
+                                    onClick={() => {
+                                      setEvent({ ...event, intro: v.path });
+                                      toast.success("Chọn intro thành công");
+                                      setOpen(false);
+                                    }}
+                                  >
+                                    <span>{v.title}</span>
+                                    <Play className="h-4 w-4" />
+                                  </div>
+                                ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Video Playlist */}
+            {/* Playlist */}
             {!isCreateMode && (
               <Card className="bg-vr-surface border-border shadow-card">
                 <CardHeader>
@@ -373,13 +459,13 @@ const EventDetails = () => {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-vr-secondary" />
+                      <User className="h-4 w-4 text-vr-secondary" />
                       <span className="text-muted-foreground">
-                        Người tham gia
+                        Người chủ trì
                       </span>
                     </div>
                     <span className="text-foreground font-medium">
-                      {event.username}
+                      {event.username || "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
