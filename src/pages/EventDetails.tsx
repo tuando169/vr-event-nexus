@@ -18,6 +18,7 @@ import {
   Calendar,
   Key,
   User,
+  Lock,
 } from "lucide-react";
 import { eventService } from "@/services/eventService";
 import { mediaService } from "@/services/mediaService";
@@ -37,6 +38,11 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const isCreateMode = eventId === "create";
   const [open, setOpen] = useState(false);
+
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(isCreateMode); // Allow create mode without auth
+  const [authForm, setAuthForm] = useState({ username: "", password: "" });
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [isEditing, setIsEditing] = useState(true);
   const [event, setEvent] = useState<Event | null>(
@@ -60,32 +66,60 @@ const EventDetails = () => {
   const [allVideos, setAllVideos] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Authentication handler
+  const handleAuth = async () => {
+    if (!eventId || isCreateMode) return;
+
+    setAuthLoading(true);
+    try {
+      const res = await eventService.getEventDetail(eventId);
+      const eventData = res.data;
+
+      // Check credentials
+      if (
+        authForm.username === eventData.username &&
+        authForm.password === eventData.password
+      ) {
+        setIsAuthenticated(true);
+        setEvent(eventData);
+        toast.success("Đăng nhập thành công!");
+
+        // Load media files
+        const mediaRes = await mediaService.getMediaFiles();
+        setAllVideos(mediaRes.data);
+        const filtered = mediaRes.data.filter((v) =>
+          eventData.video_list.includes(v._id)
+        );
+        setVideos(filtered);
+      } else {
+        toast.error("Sai tên đăng nhập hoặc mật khẩu!");
+      }
+    } catch (error) {
+      console.error("Lỗi xác thực:", error);
+      toast.error("Có lỗi xảy ra khi xác thực!");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!eventId || isCreateMode) {
       setLoading(false);
       return;
     }
 
-    const fetchData = async () => {
+    // For non-create mode, just load basic event info to show login form
+    const fetchBasicEventInfo = async () => {
       try {
         setLoading(true);
-        const res = await eventService.getEventDetail(eventId);
-        setEvent(res.data);
-
-        const mediaRes = await mediaService.getMediaFiles();
-        setAllVideos(mediaRes.data);
-
-        const filtered = mediaRes.data.filter((v) =>
-          res.data.video_list.includes(v._id)
-        );
-        setVideos(filtered);
+        // We'll just set loading to false and show auth form
       } catch (error) {
-        console.error("Lỗi khi tải chi tiết sự kiện:", error);
+        console.error("Lỗi khi tải thông tin sự kiện:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchBasicEventInfo();
   }, [eventId, isCreateMode]);
 
   const handleSave = async () => {
@@ -124,6 +158,74 @@ const EventDetails = () => {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Đang tải chi tiết sự kiện...
+      </div>
+    );
+  }
+
+  // Show authentication form for non-create mode
+  if (!isCreateMode && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-background">
+        <div className="max-w-md mx-auto px-4 py-16">
+          <Card className="bg-vr-surface border-border shadow-card">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-vr-primary/20 rounded-full flex items-center justify-center mb-4">
+                <Lock className="h-6 w-6 text-vr-primary" />
+              </div>
+              <CardTitle className="text-2xl text-foreground">
+                Xác thực Sự kiện
+              </CardTitle>
+              <p className="text-muted-foreground">
+                Nhập tên đăng nhập và mật khẩu để xem chi tiết sự kiện
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="username">Tên đăng nhập</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={authForm.username}
+                  onChange={(e) =>
+                    setAuthForm({ ...authForm, username: e.target.value })
+                  }
+                  className="mt-1"
+                  placeholder="Nhập tên đăng nhập"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Mật khẩu</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={authForm.password}
+                  onChange={(e) =>
+                    setAuthForm({ ...authForm, password: e.target.value })
+                  }
+                  className="mt-1"
+                  placeholder="Nhập mật khẩu"
+                />
+              </div>
+              <Button
+                onClick={handleAuth}
+                disabled={
+                  !authForm.username || !authForm.password || authLoading
+                }
+                className="w-full bg-gradient-primary hover:opacity-90"
+              >
+                {authLoading ? "Đang xác thực..." : "Đăng nhập"}
+              </Button>
+              <div className="text-center">
+                <Link to="/events">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Quay lại danh sách sự kiện
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

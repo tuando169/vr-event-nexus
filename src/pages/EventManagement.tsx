@@ -171,19 +171,6 @@ const EventManagement = () => {
                           </div>
                         </div>
                         <div>
-                          <div className="text-muted-foreground">Mật khẩu</div>
-                          <div className="font-medium text-foreground flex items-center">
-                            {event.password}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 ml-1"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div>
                           <div className="text-muted-foreground flex items-center">
                             <Users className="mr-1 h-3 w-3" />
                             Người tham gia
