@@ -291,11 +291,7 @@ const EventDetails = () => {
                             const file = e.target.files?.[0];
                             if (file) {
                               const res = await mediaService
-                                .uploadFile(
-                                  file,
-                                  "vr360",
-                                  event.username || "admin"
-                                )
+                                .uploadFile(file, "vr360")
                                 .then((res) => {
                                   setEvent({ ...event, logo: res.data.path });
 
@@ -349,8 +345,7 @@ const EventDetails = () => {
                               try {
                                 const res = await mediaService.uploadFile(
                                   file,
-                                  "vr360",
-                                  event.username || "admin"
+                                  "vr360"
                                 );
                                 setEvent({ ...event, intro: res.data.path });
                                 toast.success("Upload intro thành công!");

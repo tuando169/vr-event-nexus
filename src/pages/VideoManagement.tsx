@@ -80,7 +80,7 @@ const VideoManagement = () => {
     if (!file) return;
     try {
       setUploading(true);
-      const res = await mediaService.uploadFile(file, "video", "admin");
+      const res = await mediaService.uploadFile(file, "video");
       setVideos((prev) => [res.data, ...prev]); // prepend video mới
       toast({
         title: "Upload thành công",
