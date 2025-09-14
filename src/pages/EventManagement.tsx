@@ -18,6 +18,7 @@ import {
 import { Link } from "react-router-dom";
 import { eventService } from "@/services/eventService";
 import { Event } from "@/types/api";
+import { getMediaFile } from "@/lib/utils";
 
 const EventManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -139,7 +140,18 @@ const EventManagement = () => {
                 className="bg-vr-surface border-border shadow-card hover:shadow-vr transition-all duration-300"
               >
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-4 justify-center">
+                    <div className="w-20 h-20 bg-vr-surface-elevated border rounded-lg flex items-center justify-center overflow-hidden">
+                      {event.logo ? (
+                        <img
+                          src={getMediaFile(event.logo)}
+                          alt="Logo sự kiện"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xl">🏢</span>
+                      )}
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <CardTitle className="text-xl text-foreground">

@@ -14,16 +14,18 @@ export const mediaService = {
   async uploadFile(
     file: File,
     folder: string = "image",
-    createdBy?: string,
-    scale?: string
-  ): Promise<ApiResponse<MediaFile>> {
+    createdBy?: string
+  ): Promise<{
+    code: number;
+    message: string;
+    files: MediaFile[];
+  }> {
     const formData = new FormData();
     formData.append("files", file);
     formData.append("folder", folder);
     if (createdBy) formData.append("createdBy", createdBy);
-    if (scale) formData.append("scale", scale);
 
-    const response = await apiClient.post<ApiResponse<MediaFile>>(
+    const response = await apiClient.post(
       "/api/v1/mediafile/upload",
       formData,
       {

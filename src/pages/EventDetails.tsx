@@ -37,7 +37,9 @@ const EventDetails = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const isCreateMode = eventId === "create";
-  const [open, setOpen] = useState(false);
+  // state
+  const [openIntroDialog, setOpenIntroDialog] = useState(false);
+  const [openPlaylistDialog, setOpenPlaylistDialog] = useState(false);
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(isCreateMode); // Allow create mode without auth
@@ -303,15 +305,12 @@ const EventDetails = () => {
                   {!isCreateMode && (
                     <div>
                       <Label>ID Sự kiện</Label>
-                      <div className="mt-1 text-foreground font-mono">
-                        {event._id}
-                      </div>
+                      <div className="mt-1 text-foreground">{event._id}</div>
                     </div>
                   )}
 
-                  {/* Người chủ trì */}
                   <div>
-                    <Label>Người chủ trì</Label>
+                    <Label>Tên đăng nhập</Label>
                     {isCreateMode ? (
                       <Input
                         value={event.username}
@@ -321,7 +320,7 @@ const EventDetails = () => {
                         className="mt-1"
                       />
                     ) : (
-                      <div className="mt-1 text-foreground font-mono">
+                      <div className="mt-1 text-foreground">
                         {event.username || "—"}
                       </div>
                     )}
@@ -392,13 +391,13 @@ const EventDetails = () => {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const res = await mediaService
+                              await mediaService
                                 .uploadFile(file, "vr360")
                                 .then((res) => {
-                                  setEvent({ ...event, logo: res.data.path });
-
-                                  const url = URL.createObjectURL(file);
-                                  setEvent({ ...event, logo: url });
+                                  setEvent({
+                                    ...event,
+                                    logo: res.files[0].path,
+                                  });
                                 });
                             }
                           }}
@@ -449,7 +448,10 @@ const EventDetails = () => {
                                   file,
                                   "vr360"
                                 );
-                                setEvent({ ...event, intro: res.data.path });
+                                setEvent({
+                                  ...event,
+                                  intro: res.files[0].path,
+                                });
                                 toast.success("Upload intro thành công!");
                               } catch (err) {
                                 toast.error("Upload thất bại");
@@ -468,7 +470,10 @@ const EventDetails = () => {
                             Upload Video
                           </Button>
                         </div>
-                        <Dialog open={open} onOpenChange={setOpen}>
+                        <Dialog
+                          open={openIntroDialog}
+                          onOpenChange={setOpenIntroDialog}
+                        >
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
                               <Video className="mr-2 h-4 w-4" />
@@ -489,7 +494,7 @@ const EventDetails = () => {
                                     onClick={() => {
                                       setEvent({ ...event, intro: v.path });
                                       toast.success("Chọn intro thành công");
-                                      setOpen(false);
+                                      setOpenIntroDialog(false);
                                     }}
                                   >
                                     <span>{v.title}</span>
@@ -518,10 +523,46 @@ const EventDetails = () => {
                     <Button
                       size="sm"
                       className="bg-gradient-primary hover:opacity-90"
+                      onClick={() => setOpenPlaylistDialog(true)} // mở dialog
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Thêm Video
                     </Button>
+                    <Dialog
+                      open={openPlaylistDialog}
+                      onOpenChange={setOpenPlaylistDialog}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            Chọn Video thêm vào Playlist
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-2 max-h-80 overflow-y-auto">
+                          {allVideos
+                            .filter((i) => i.path.includes("vr360"))
+                            .map((v) => (
+                              <div
+                                key={v._id}
+                                className="flex items-center justify-between p-2 border rounded-lg cursor-pointer hover:bg-vr-surface-elevated"
+                                onClick={async () => {
+                                  try {
+                                    setVideos((prev) => [...prev, v]);
+                                    toast.success("Thêm video thành công");
+                                    setOpenPlaylistDialog(false);
+                                  } catch (err) {
+                                    toast.error("Thêm video thất bại");
+                                    console.error(err);
+                                  }
+                                }}
+                              >
+                                <span>{v.title}</span>
+                                <Plus className="h-4 w-4" />
+                              </div>
+                            ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -576,11 +617,20 @@ const EventDetails = () => {
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-vr-secondary" />
                       <span className="text-muted-foreground">
-                        Người chủ trì
+                        Tên đăng nhập
                       </span>
                     </div>
                     <span className="text-foreground font-medium">
                       {event.username || "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Key className="h-4 w-4 text-vr-secondary" />
+                      <span className="text-muted-foreground">Mật khẩu</span>
+                    </div>
+                    <span className="text-foreground font-medium">
+                      {event.password}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -592,15 +642,7 @@ const EventDetails = () => {
                       {new Date(event.createdAt).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Key className="h-4 w-4 text-vr-secondary" />
-                      <span className="text-muted-foreground">Mật khẩu</span>
-                    </div>
-                    <span className="text-foreground font-mono font-medium">
-                      {event.password}
-                    </span>
-                  </div>
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Video className="h-4 w-4 text-vr-secondary" />

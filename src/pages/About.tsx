@@ -13,11 +13,11 @@ import { Button } from "@/components/ui/button";
 const About = () => {
   const teamMembers = [
     {
-      name: "Đỗ Tuấn Min",
+      name: "Đỗ Tuấn Minh",
       role: "Lead Developer",
-      description: "Chuyên gia phát triển VR/AR với 5+ năm kinh nghiệm",
+      description: "Phát triển hệ thống thiết bị VR",
       avatar: "/placeholder.svg",
-      skills: ["React", "WebXR", "Three.js", "Node.js"],
+      skills: ["React", "WebXR", "Three.js", "Unity"],
       social: {
         github: "#",
         linkedin: "#",
@@ -27,9 +27,9 @@ const About = () => {
     {
       name: "Đỗ Trung Hiếu",
       role: "Backend Developer",
-      description: "Thiết kế giao diện người dùng cho các ứng dụng VR",
+      description: "Phát triển hệ thống backend và streaming",
       avatar: "/placeholder.svg",
-      skills: ["Figma", "Adobe XD", "3D Modeling", "User Research"],
+      skills: ["MongoDB", "ExpressJS", "Deployment"],
       social: {
         github: "#",
         linkedin: "#",
@@ -39,9 +39,9 @@ const About = () => {
     {
       name: "Đỗ Đăng Tuân",
       role: "FrontEnd Developer",
-      description: "Phát triển hệ thống backend và streaming",
+      description: "Phát triển giao diện web cho ứng dụng VR",
       avatar: "/placeholder.svg",
-      skills: ["Python", "WebRTC", "Docker", "AWS"],
+      skills: ["React", "Typescript", "TailwindCSS"],
       social: {
         github: "#",
         linkedin: "#",
@@ -50,10 +50,10 @@ const About = () => {
     },
     {
       name: "Lê Hoàng Anh",
-      role: "AI Developer",
+      role: "VR Developer",
       description: "Tạo nội dung 360° và trải nghiệm VR",
       avatar: "/placeholder.svg",
-      skills: ["Unity", "Blender", "Video 360°", "Content Strategy"],
+      skills: ["Unity", "Blender", "Video 360"],
       social: {
         github: "#",
         linkedin: "#",
@@ -67,12 +67,16 @@ const About = () => {
       {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-          Về Chúng Tôi
+          VR Event Manager
         </h1>
-        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-          Chúng tôi là đội ngũ đam mê công nghệ VR/AR, cam kết mang đến những
-          trải nghiệm thực tế ảo tuyệt vời và giải pháp quản lý sự kiện 360°
-          hiện đại nhất.
+        <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+          VR Event Manager là nền tảng quản lý và trình chiếu sự kiện thực tế ảo
+          được thiết kế dành riêng cho nhu cầu tổ chức, phát sóng và điều khiển
+          nội dung VR 360° một cách chuyên nghiệp. Phần mềm mang đến khả năng
+          quản lý toàn bộ kho video 360° từ lưu trữ, phân loại, chỉnh sửa đến
+          trình chiếu chỉ bằng vài thao tác đơn giản, đồng thời hỗ trợ mạnh mẽ
+          việc tạo và điều khiển các sự kiện VR theo kịch bản định sẵn hoặc phát
+          trực tiếp.
         </p>
       </div>
 
@@ -87,10 +91,13 @@ const About = () => {
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-muted-foreground leading-relaxed max-w-4xl mx-auto">
-            Chúng tôi tin rằng công nghệ thực tế ảo có thể thay đổi cách con
-            người tương tác, học tập và giải trí. Với nền tảng quản lý video
-            360° và sự kiện VR, chúng tôi muốn tạo ra những công cụ dễ sử dụng,
-            mạnh mẽ và có thể tiếp cận được với tất cả mọi người.
+            Với VR Event Manager, bạn có thể dễ dàng khởi tạo sự kiện mới, lựa
+            chọn nội dung cần phát, điều khiển luồng streaming và theo dõi toàn
+            bộ quá trình trình chiếu trên kính thực tế ảo trong thời gian thực.
+            Không chỉ là công cụ phát lại, hệ thống còn tích hợp công cụ điều
+            khiển streaming hiện đại, giúp đảm bảo độ mượt mà, ổn định và chất
+            lượng hình ảnh cao, đáp ứng nhu cầu của cả hội thảo, triển lãm, đào
+            tạo hay chương trình giải trí tương tác.
           </p>
         </CardContent>
       </Card>
@@ -142,7 +149,10 @@ const About = () => {
                 {/* Social Links */}
                 <div className="flex justify-center space-x-2">
                   <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                    <Github className="h-4 w-4" />
+                    <Github
+                      className="h-4 w-4"
+                      onClick={() => window.open(member.social.github)}
+                    />
                   </Button>
                   <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                     <Linkedin className="h-4 w-4" />
@@ -178,8 +188,8 @@ const About = () => {
               "AWS",
               "Unity",
               "Blender",
-              "FFmpeg",
-              "Redis",
+              "MongoDB",
+              "ExpressJS",
             ].map((tech, index) => (
               <div
                 key={index}
