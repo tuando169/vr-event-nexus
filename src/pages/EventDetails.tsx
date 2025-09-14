@@ -237,20 +237,6 @@ const EventDetails = () => {
                       disabled={!isEditing}
                     />
                   </div>
-
-                  {/* Trạng thái */}
-                  {!isCreateMode && (
-                    <div>
-                      <Label>Trạng thái</Label>
-                      <div className="mt-1">
-                        <Badge className="bg-vr-secondary text-vr-background">
-                          {event.streaming === "active"
-                            ? "Đang diễn ra"
-                            : event.streaming}
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Mô tả */}
@@ -293,11 +279,43 @@ const EventDetails = () => {
                         <span className="text-2xl">🏢</span>
                       )}
                     </div>
+
                     {isEditing && (
-                      <Button variant="outline" size="sm">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Đổi Logo
-                      </Button>
+                      <>
+                        <input
+                          id="logo-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const res = await mediaService
+                                .uploadFile(
+                                  file,
+                                  "vr360",
+                                  event.username || "admin"
+                                )
+                                .then((res) => {
+                                  setEvent({ ...event, logo: res.data.path });
+
+                                  const url = URL.createObjectURL(file);
+                                  setEvent({ ...event, logo: url });
+                                });
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            document.getElementById("logo-upload")?.click()
+                          }
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Đổi Logo
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
