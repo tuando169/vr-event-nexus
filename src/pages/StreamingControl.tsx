@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,6 @@ import {
   Activity,
   Settings,
   Radio,
-  Eye,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { eventService } from "@/services/eventService";
@@ -25,14 +24,25 @@ const StreamingControl = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [volume, setVolume] = useState([75]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-
   const [events, setEvents] = useState<Event[]>([]);
   const [playlist, setPlaylist] = useState<MediaFile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+
   const currentVideo = playlist[currentIndex] || null;
+
+  // format time mm:ss
+  const formatTime = (sec: number) => {
+    if (!sec || isNaN(sec)) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   // Fetch data lần đầu
   useEffect(() => {
@@ -42,13 +52,16 @@ const StreamingControl = () => {
 
         // Lấy sự kiện
         const eventsRes = await eventService.getEvent();
-        if (eventsRes.data) setEvents(eventsRes.data);
-        else setEvents([]);
+        if (eventsRes.data) {
+          setEvents(eventsRes.data);
 
-        if (events.length > 0) {
-          const firstEvent = events[0];
-          setSelectedEvent(firstEvent);
-          await loadPlaylist(firstEvent.video_list);
+          if (eventsRes.data.length > 0) {
+            const firstEvent = eventsRes.data[0];
+            setSelectedEvent(firstEvent);
+            await loadPlaylist(firstEvent.video_list);
+          }
+        } else {
+          setEvents([]);
         }
 
         // Lấy thiết bị
@@ -86,6 +99,13 @@ const StreamingControl = () => {
   const handlePlayVideo = async (index: number) => {
     setCurrentIndex(index);
     setIsStreaming(true);
+
+    const videoEl = videoRef.current;
+    if (videoEl) {
+      videoEl.currentTime = 0;
+      await videoEl.play();
+    }
+
     if (selectedEvent) {
       await eventService.updateEvent(selectedEvent._id, {
         streaming: playlist[index]?._id || "",
@@ -95,23 +115,55 @@ const StreamingControl = () => {
 
   const handlePauseVideo = async () => {
     setIsStreaming(false);
+
+    const videoEl = videoRef.current;
+    if (videoEl) {
+      videoEl.pause();
+    }
+
     if (selectedEvent) {
       await eventService.updateEvent(selectedEvent._id, { streaming: "" });
     }
   };
 
-  // Auto next khi video kết thúc (giả lập thời lượng 5s)
+  // Auto next khi video kết thúc + update progress
   useEffect(() => {
-    if (!isStreaming || !currentVideo) return;
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
 
-    const timer = setTimeout(() => {
+    const handleLoadedMetadata = () => {
+      setDuration(videoEl.duration);
+    };
+
+    const handleTimeUpdate = () => {
+      if (videoEl.duration > 0) {
+        setProgress((videoEl.currentTime / videoEl.duration) * 100);
+      }
+    };
+
+    const handleEnded = () => {
       let nextIndex = currentIndex + 1;
-      if (nextIndex >= playlist.length) nextIndex = 0; // quay lại đầu
+      if (nextIndex >= playlist.length) nextIndex = 0;
       handlePlayVideo(nextIndex);
-    }, 5000); // giả lập 5 giây phát xong video
+    };
 
-    return () => clearTimeout(timer);
-  }, [isStreaming, currentIndex, playlist]);
+    videoEl.addEventListener("loadedmetadata", handleLoadedMetadata);
+    videoEl.addEventListener("timeupdate", handleTimeUpdate);
+    videoEl.addEventListener("ended", handleEnded);
+
+    return () => {
+      videoEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      videoEl.removeEventListener("timeupdate", handleTimeUpdate);
+      videoEl.removeEventListener("ended", handleEnded);
+    };
+  }, [currentVideo]);
+
+  // Đồng bộ volume với video
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume[0] / 100;
+    }
+  }, [volume]);
 
   return (
     <div className="min-h-screen bg-gradient-background">
@@ -170,11 +222,18 @@ const StreamingControl = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
+                      <video
+                        ref={videoRef}
+                        src={getMediaFile(currentVideo.path)}
+                        autoPlay={isStreaming}
+                        controls={false}
+                        className="w-full rounded-lg"
+                      />
                       <div className="flex items-center space-x-4">
                         <img
                           src={getMediaFile(currentVideo.thumbnail)}
                           alt=""
-                          className="object-cover h-10 w-10 rounded-md"
+                          className="object-cover h-12 w-12 rounded-lg"
                         />
                         <div className="flex-1">
                           <h3 className="text-lg font-medium text-foreground mb-1">
@@ -185,9 +244,13 @@ const StreamingControl = () => {
                           </div>
                           <div className="w-full bg-vr-surface-elevated rounded-full h-2 mt-2">
                             <div
-                              className="bg-gradient-primary h-2 rounded-full"
-                              style={{ width: "30%" }}
+                              className="bg-gradient-primary h-2 rounded-full transition-all duration-200"
+                              style={{ width: `${progress}%` }}
                             />
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {formatTime((progress / 100) * duration)} /{" "}
+                            {formatTime(duration)}
                           </div>
                         </div>
                       </div>
@@ -267,7 +330,7 @@ const StreamingControl = () => {
                             ? "bg-gradient-primary/10 border-primary"
                             : "bg-vr-surface-elevated border-border hover:bg-vr-surface-elevated/80"
                         }`}
-                        onClick={() => setCurrentIndex(index)}
+                        onClick={() => handlePlayVideo(index)}
                       >
                         <div className="flex items-center space-x-3">
                           <div className="text-sm text-muted-foreground w-6">
@@ -388,9 +451,6 @@ const StreamingControl = () => {
                             </div>
                           </div>
                         </div>
-                        {/* <Button size="sm" variant="ghost">
-                          <Eye className="h-3 w-3" />
-                        </Button> */}
                       </div>
                     ))}
                   </div>
