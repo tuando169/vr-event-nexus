@@ -35,7 +35,59 @@ const StreamingControl = () => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
 
+  const [streamImage, setStreamImage] = useState<string | null>(null);
+  const [lastStreamId, setLastStreamId] = useState<string | null>(null);
+
   const currentVideo = playlist[currentIndex] || null;
+
+  const fetchStreamFrame = async () => {
+    try {
+      const res = await mediaService.getMediaFiles({ page: 1, size: 1000 });
+      if (!res.data) return;
+
+      const streams = res.data.filter((m: MediaFile) =>
+        m.path?.startsWith("public/streaming")
+      );
+      if (streams.length === 0) return;
+
+      const latest = streams.sort(
+        (a: MediaFile, b: MediaFile) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )[0];
+
+      if (latest && latest._id !== lastStreamId) {
+        // Xoá ảnh cũ nếu có
+        if (lastStreamId) {
+          deleteMediaFile(lastStreamId);
+        }
+
+        // Cập nhật ảnh mới
+        setStreamImage(getMediaFile(latest.path));
+        setLastStreamId(latest._id);
+      }
+    } catch (err) {
+      console.error("Lỗi khi fetch stream frame:", err);
+    }
+  };
+
+  const deleteMediaFile = async (id: string) => {
+    try {
+      await fetch(`http://45.124.94.12:8080/api/v1/mediafile/delete/${id}`, {
+        method: "DELETE",
+      });
+      console.log("Đã xóa file cũ:", id);
+    } catch (err) {
+      console.error("Lỗi khi xóa file:", err);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStreamFrame();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lastStreamId]);
 
   // format time mm:ss
   const formatTime = (sec: number) => {
@@ -398,6 +450,23 @@ const StreamingControl = () => {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-vr-surface border-border shadow-card">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Stream từ thiết bị</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {streamImage ? (
+                    <img
+                      src={streamImage}
+                      alt="VR Stream Frame"
+                      className="rounded-lg w-full object-contain max-h-[400px]"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground">Chưa có stream nào</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
