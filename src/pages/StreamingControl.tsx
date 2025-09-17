@@ -84,7 +84,7 @@ const StreamingControl = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchStreamFrame();
-    }, 1000);
+    }, 400);
 
     return () => clearInterval(interval);
   }, [lastStreamId]);
